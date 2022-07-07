@@ -24,21 +24,70 @@ EDF_FILES_DIR = "data"
 RUNS_REST = [1, 2]
 RUNS_LEFT_OR_RIGHT_FIST = [3, 4, 7, 8, 11, 12]
 RUNS_BOTH_FISTS_OR_FEET = [5, 6, 9, 10, 13, 14]
+LABELS = {
+    'T0': 0,
+    'T1': 1,
+    'T2': 2
+}
 
 
 def print_raws_properties(raws):
+    """Display usefull stat/data
+    
+        Based on MNE doc (https://mne.tools/stable/auto_tutorials/epochs/40_autogenerate_metadata.html#sphx-glr-auto-tutorials-epochs-40-autogenerate-metadata-py),
+            responses later than 1500 ms after stimulus onset are to be considered invalid.
+        Because they don’t capture the neuronal processes of interest here.
+
+        0.006215 ->
+            160 Hz = 1 / 160 = 0.00625 s
+            0.006215 to ensure all data are keep, because 160Hz is a mean
+    """
 
     print(f"\n\nRaws infos:", raws)
     print(raws.info)
     print(raws.times)
     print(len(raws.times))
 
+    # for ann in raws.annotations:
+    #     # ann['duration'] = 1.5
+    #     ann = ann.set_duration(1.5)
+
     print(f"\nAnnotations infos:")
     print(raws.annotations)
+    print(raws.annotations[0])
+    print(raws.annotations[1])
+    print(len(raws.annotations))
 
-    events = mne.events_from_annotations(raws)
-    print(f"\nEvents infos:")
-    print(events)
+    # Fetch event witch start each labels
+    events_start_label, event_dict_start_label = mne.events_from_annotations(raws, chunk_duration=0.00625)
+    print(f"\nEvents start labels:")
+    print(len(events_start_label))
+    print(event_dict_start_label)
+
+    # Create annotations from those events
+
+    # events_all, event_dict_all = mne.events_from_annotations(raws, event_id=LABELS, chunk_duration=0.006215)
+
+    # metadata, events, events_id = mne.epochs.make_metadata(
+    #     events=events, event_id=event_dict,
+    #     tmin=0, tmax=0.00625, sfreq=raws.info['sfreq']
+    # )
+    # print(len(events))
+    # print(len(events_id))
+    # print(metadata)
+
+    # metadata, events, events_id = mne.epochs.make_metadata(
+    #     events=events, event_id=event_dict,
+    #     tmin=0, tmax=, sfreq=raws.info['sfreq']
+    # )
+    # print(len(events))
+    # print(len(events_id))
+    # print(metadata)
+
+
+    # annotations = mne.annotations_from_events(events, raws.info['sfreq'])
+    # print(f"\nannotations infos:")
+    # print(annotations)
 
 
 def fetch_data(runs_idx: list = range(1, 15), verbose=False):
@@ -135,15 +184,28 @@ if __name__ == "__main__":
     """
 
     # raws = fetch_data(runs_idx=RUNS_REST, verbose=True)
-    # raws = fetch_data(runs_idx=RUNS_LEFT_OR_RIGHT_FIST, verbose=True)
+    raws = fetch_data(runs_idx=RUNS_LEFT_OR_RIGHT_FIST, verbose=True)
     # raws = fetch_data(runs_idx=RUNS_BOTH_FISTS_OR_FEET, verbose=True)
 
     # raws = preprocessing_data(raws, verbose=True)
 
     # raw.plot_psd(fmax=80)
-    # raws.plot(n_channels=64, block=True)
+    raws.plot(n_channels=64, block=True)
+
+    # X, y = make_classification(n_samples=120000, n_features=64, n_classes=3, n_clusters_per_class=1)
+
+    X, X_times = raws[:, :100]
 
 
-    X, y = make_classification(n_samples=120000, n_features=64, n_classes=3, n_clusters_per_class=1)
-    piepline = create_pipeline()
-    evaluation(piepline, X, y)
+    # y = X[]
+
+    print(X.dtype)
+    print(X.shape)
+    # print(X_times)
+    print(X_times.dtype)
+    print(X_times.shape)
+
+    print(raws.annotations)
+    # plt.plot(X, y)
+    # piepline = create_pipeline()
+    # evaluation(piepline, X, y)
