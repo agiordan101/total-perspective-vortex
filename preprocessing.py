@@ -53,6 +53,7 @@ def preprocessing_data(raw, requested_labels, verbose=False):
     # epochs = mne.make_fixed_length_epochs(raw, duration=0.5, overlap=0.1)
     epochs = mne.Epochs(raw, events_start_label, tmin=0, tmax=1.5, baseline=None)
     print(epochs)
+    # mne.viz.plot_epochs(epochs, block=True)
 
     print(f"\tData from EPOCHS\n")
     data = epochs.get_data()                            # Shape: 3: (epochs, channels, samples)

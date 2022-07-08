@@ -28,7 +28,7 @@ from utils import *
 
 DIR_NAME = os.path.dirname(__file__)
 EDF_FILES_DIR = "data"
-RUNS_REST = [1, 2]
+RUNS_BASELINE = [1, 2]
 RUNS_LEFT_OR_RIGHT_FIST = [3, 4, 7, 8, 11, 12]
 RUNS_BOTH_FISTS_OR_FEET = [5, 6, 9, 10, 13, 14]
 
@@ -112,11 +112,11 @@ if __name__ == "__main__":
     """w
     """
 
-    # raw = fetch_data(runs_idx=RUNS_REST, verbose=True)
-    raw = fetch_data(runs_idx=RUNS_LEFT_OR_RIGHT_FIST, verbose=False)
+    # raw = fetch_data(runs_idx=RUNS_BASELINE, verbose=True)
+    raw = fetch_data(runs_idx=RUNS_BASELINE + RUNS_LEFT_OR_RIGHT_FIST, verbose=False)
     # raw = fetch_data(runs_idx=RUNS_BOTH_FISTS_OR_FEET, verbose=False)
 
-    raw.plot_psd(fmax=80)
+    # raw.plot_psd(fmax=80)
     # raw.plot(n_channels=64, block=True)
     pipeline = create_pipeline()
 
