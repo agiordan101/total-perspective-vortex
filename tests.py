@@ -48,46 +48,14 @@ def print_raws_properties(raws):
     print(raws.times)
     print(len(raws.times))
 
-    # for ann in raws.annotations:
-    #     # ann['duration'] = 1.5
-    #     ann = ann.set_duration(1.5)
-
     print(f"\nAnnotations infos:")
     print(raws.annotations)
     print(raws.annotations[0])
-    print(raws.annotations[1])
-    print(len(raws.annotations))
-
-    # Fetch event witch start each labels
-    events_start_label, event_dict_start_label = mne.events_from_annotations(raws, chunk_duration=0.00625)
-    print(f"\nEvents start labels:")
-    print(len(events_start_label))
-    print(event_dict_start_label)
-
-    # Create annotations from those events
 
     # events_all, event_dict_all = mne.events_from_annotations(raws, event_id=LABELS, chunk_duration=0.006215)
-
-    # metadata, events, events_id = mne.epochs.make_metadata(
-    #     events=events, event_id=event_dict,
-    #     tmin=0, tmax=0.00625, sfreq=raws.info['sfreq']
-    # )
-    # print(len(events))
-    # print(len(events_id))
-    # print(metadata)
-
-    # metadata, events, events_id = mne.epochs.make_metadata(
-    #     events=events, event_id=event_dict,
-    #     tmin=0, tmax=, sfreq=raws.info['sfreq']
-    # )
-    # print(len(events))
-    # print(len(events_id))
-    # print(metadata)
-
-
-    # annotations = mne.annotations_from_events(events, raws.info['sfreq'])
-    # print(f"\nannotations infos:")
-    # print(annotations)
+    # print(f"\nAll events:")
+    # print(len(events_all))
+    # print(event_dict_all)
 
 
 def fetch_data(runs_idx: list = range(1, 15), verbose=False):
@@ -158,6 +126,42 @@ def transform_data(raw):
     return raw
 
 
+def create_dataset_from_raws(raws):
+    """ Fetch data in raw
+        Create y targets with annotations
+    """
+
+    X, X_times = raws[:]
+    print(X.shape)
+    print(len(X.T))
+
+    # Fetch event witch start each annotation/label
+    events_start_label, event_dict_start_label = mne.events_from_annotations(raws, event_id=LABELS)
+    print(f"\nEvents start labels:")
+    print(len(events_start_label))
+
+    # Compute delta time sample for 1.5 seconds (Pertinent neuronal activity dtime)
+    dsamples_for_1500ms = int(raws.info['sfreq'] * 1.5)
+    print(f"dsamples_for_1500ms={dsamples_for_1500ms}")
+
+    # Attribute a label_id to each 1500ms first samples. -1 to others
+    y = np.full(len(X.T), -1)
+    for event_onset, _, event_id in events_start_label:
+        y[event_onset: event_onset + dsamples_for_1500ms] = event_id
+    print(y.shape)
+    print(y)
+
+    # Remove samples not within 1500ms window
+    useless_samples_idx = np.argwhere(y == -1)
+    print(f"useless_samples_idx={len(useless_samples_idx)}")
+
+    X = np.delete(X, useless_samples_idx, axis=1)
+    y = np.delete(y, useless_samples_idx)
+    print(X.shape)
+    print(y.shape)
+    return X.T, y
+
+
 def create_pipeline():
     """create_pipeline"""
 
@@ -172,8 +176,8 @@ def create_pipeline():
 def evaluation(pipeline, X, y):
     """evaluation"""
 
-    print(f"Evaluate dataset", X, y, "with pipeline", pipeline)
-    cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=10, random_state=1)
+    print(f"Evaluate dataset", X.shape, y.shape, "with pipeline", pipeline)
+    cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=1)
     metric = cross_val_score(pipeline, X, y, cv=cv, n_jobs=-1)
 
     print('Accuracy: %.3f (kfold std %.3f)' % (np.mean(metric), np.std(metric)))
@@ -186,26 +190,15 @@ if __name__ == "__main__":
     # raws = fetch_data(runs_idx=RUNS_REST, verbose=True)
     raws = fetch_data(runs_idx=RUNS_LEFT_OR_RIGHT_FIST, verbose=True)
     # raws = fetch_data(runs_idx=RUNS_BOTH_FISTS_OR_FEET, verbose=True)
-
     # raws = preprocessing_data(raws, verbose=True)
 
     # raw.plot_psd(fmax=80)
-    raws.plot(n_channels=64, block=True)
+    # raws.plot(n_channels=64, block=True)
 
-    # X, y = make_classification(n_samples=120000, n_features=64, n_classes=3, n_clusters_per_class=1)
+    # X, y = make_classification(n_samples=42000, n_features=64, n_classes=3, n_clusters_per_class=1)
+    X, y = create_dataset_from_raws(raws)
 
-    X, X_times = raws[:, :100]
-
-
-    # y = X[]
-
-    print(X.dtype)
-    print(X.shape)
-    # print(X_times)
-    print(X_times.dtype)
-    print(X_times.shape)
-
-    print(raws.annotations)
-    # plt.plot(X, y)
-    # piepline = create_pipeline()
-    # evaluation(piepline, X, y)
+    # plt.plot(np.arange(len(y)), y)
+    # plt.plot(X.T, y)
+    piepline = create_pipeline()
+    evaluation(piepline, X, y)
