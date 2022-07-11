@@ -2,7 +2,7 @@ import mne
 
 from utils import *
 
-def preprocessing_data(raw, requested_labels, verbose=False):
+def preprocessing_data(raw, requested_labels, baseline_mode=None, verbose=False):
     """
         Filter data
 
@@ -38,21 +38,32 @@ def preprocessing_data(raw, requested_labels, verbose=False):
     print(f"\n\n\tPREPROCESSING\n")
     # raw = raw.crop(tmax=40)
 
-    # Re-reference the data according to the average of all channels (Better classification)
-    raw, _ = mne.set_eeg_reference(raw, ref_channels='average')
+    if baseline_mode is None:
+        # Re-reference the data according to the average of all channels (Better classification)
+        raw, _ = mne.set_eeg_reference(raw, ref_channels='average')
+
+    # else:
+    #     data, times = raw.get_data(return_times=True)
+    #     data_rescale = mne.baseline.rescale(data, times, (None, 1.5), baseline_mode)
+    #     print(raw.info)
+    #     raw = mne.io.RawArray(data_rescale, raw.info)
 
     # raw.plot_psd()
     # raw.filter(l_freq=0, h_freq=20)
     # raw.plot_psd()
-    # print(raw)
+    print(raw)
+    print(raw.annotations)
 
-    # Fetch event witch start each annotation/label
+    # Fetch events that start each annotation/label
     events_start_label, _ = mne.events_from_annotations(raw, event_id=requested_labels)
+    print(f"events_start_label: {events_start_label}")
 
     print(f"\tEPOCHS\n")
-    # epochs = mne.make_fixed_length_epochs(raw, duration=0.5, overlap=0.1)
+    # Fetch 1.5 seconds samples of the annotation beginning for one epoch
+    # epochs = mne.Epochs(raw, events_start_label, tmin=0, tmax=1.5, baseline=(0, 0))
     epochs = mne.Epochs(raw, events_start_label, tmin=0, tmax=1.5, baseline=None)
     print(epochs)
+    # epochs = mne.make_fixed_length_epochs(raw, duration=0.5, overlap=0.1)
     # mne.viz.plot_epochs(epochs, block=True)
 
     print(f"\tData from EPOCHS\n")
@@ -63,7 +74,7 @@ def preprocessing_data(raw, requested_labels, verbose=False):
     print(data.shape)   
 
     labels = events_start_label[:, 2]
-    print(labels)
+    print(f"labels: {labels}")
 
     if verbose:
         print_raw_properties(raw)

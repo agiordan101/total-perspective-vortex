@@ -1,5 +1,6 @@
 import os
 from random import sample
+from time import time
 import mne
 from mne.preprocessing import ICA
 from mne.decoding import CSP
@@ -49,7 +50,14 @@ LABELS = {
         'T0': 0,
         'T1': 1,
         'T2': 2
-    }
+    },
+    # '01234': {
+    #     'T0': 0,
+    #     'T1': 1,
+    #     'T2': 2,
+    #     'T3': 3,
+    #     'T4': 4,
+    # }
 }
 
 
@@ -59,6 +67,8 @@ def fetch_data(runs_idx: list = range(1, 15), verbose=False):
     """
     dir_path = os.path.join(DIR_NAME, EDF_FILES_DIR)
     dir_content_path = [os.path.join(dir_path, f) for f in os.listdir(dir_path)]
+
+    # both_exp = any(id in RUNS_LEFT_OR_RIGHT_FIST for id in runs_idx) and any(id in RUNS_BOTH_FISTS_OR_FEET for id in runs_idx)
 
     raw = []
     for f in dir_content_path:
@@ -98,7 +108,7 @@ def evaluation(pipeline, X, y):
     """evaluation"""
 
     print(f"Evaluate dataset", X.shape, y.shape, "with pipeline", pipeline)
-    cv = RepeatedStratifiedKFold(n_splits=5, n_repeats=2, random_state=1)
+    cv = RepeatedStratifiedKFold(n_splits=5, n_repeats=2, random_state=int(time()))
 
     metric = cross_val_score(pipeline, X, y, cv=cv, n_jobs=-1)
     acc = np.mean(metric)
@@ -113,7 +123,8 @@ if __name__ == "__main__":
     """
 
     # raw = fetch_data(runs_idx=RUNS_BASELINE, verbose=True)
-    raw = fetch_data(runs_idx=RUNS_BASELINE + RUNS_LEFT_OR_RIGHT_FIST, verbose=False)
+    # raw = fetch_data(runs_idx=RUNS_LEFT_OR_RIGHT_FIST, verbose=False) # loss=0.767
+    raw = fetch_data(runs_idx=RUNS_BASELINE + RUNS_LEFT_OR_RIGHT_FIST, verbose=False) # loss=0.797
     # raw = fetch_data(runs_idx=RUNS_BOTH_FISTS_OR_FEET, verbose=False)
 
     # raw.plot_psd(fmax=80)
@@ -125,8 +136,14 @@ if __name__ == "__main__":
     # for k, labels in LABELS.items():
     #     _, X, y = preprocessing_data(raw, labels, verbose=False)
     #     accuracies[k] = evaluation(pipeline, X, y)
-    
+
+    # for baseline_mode in ["mean", "ratio", "logratio", "percent", "zscore", "zlogratio"]:
+    #     _, X, y = preprocessing_data(raw, LABELS['012'], baseline_mode=baseline_mode, verbose=False)
+    #     loss = evaluation(pipeline, X, y)
+    #     print(f"loss: {baseline_mode}: ", loss)
+    #     accuracies['012' + baseline_mode] = loss
+
     _, X, y = preprocessing_data(raw, LABELS['012'], verbose=False)
     accuracies['012'] = evaluation(pipeline, X, y)
-    
+
     print(f"Accuracies: {accuracies}")
